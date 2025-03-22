@@ -23,6 +23,7 @@ import net.minecraft.world.World
 import net.minecraft.world.dimension.DimensionTypes
 import xyz.nucleoid.fantasy.RuntimeWorldConfig
 import kotlin.random.Random
+import net.minecraft.world.GameMode
 
 class CreateWorldCommand : Command<ServerCommandSource> {
     override fun run(context: CommandContext<ServerCommandSource>): Int {
@@ -41,6 +42,7 @@ class CreateWorldCommand : Command<ServerCommandSource> {
                 return 0
             }
 
+            
             val worldDifficulty = getEnumArgument(context, WORLD_DIFFICULTY_ARG, Difficulty::class.java, server.saveProperties.difficulty)
             val dimensionIdentifier = getIdentifierArgument(context, WORLD_DIMENSION_ARG, DimensionTypes.OVERWORLD_ID)
             val serverWorld = server.getWorld(RegistryKey.of(RegistryKeys.WORLD, dimensionIdentifier)) ?: server.getWorld(World.OVERWORLD)!!

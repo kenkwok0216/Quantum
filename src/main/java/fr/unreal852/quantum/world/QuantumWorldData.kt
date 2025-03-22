@@ -4,6 +4,7 @@ import fr.unreal852.quantum.utils.Extensions.getIdentifier
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.util.Identifier
 import net.minecraft.world.Difficulty
+import net.minecraft.world.GameMode
 import xyz.nucleoid.fantasy.RuntimeWorldConfig
 
 class QuantumWorldData(worldId: Identifier, dimensionId: Identifier, runtimeWorldConfig: RuntimeWorldConfig) {

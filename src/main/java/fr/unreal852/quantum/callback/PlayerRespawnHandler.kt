@@ -5,6 +5,8 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents.AfterRespawn
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket
 import net.minecraft.network.packet.s2c.play.PositionFlag
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.util.math.Vec3d
+import net.minecraft.entity.player.PlayerPosition
 
 class PlayerRespawnHandler : AfterRespawn {
 
@@ -15,14 +17,16 @@ class PlayerRespawnHandler : AfterRespawn {
 
         if (oldPlayer.spawnPointPosition != null) { // Ignore respawn if the player has a bed
             return
-        }
+        }        
 
         val worldState = QuantumWorldStorage.getWorldState(newPlayer.serverWorld)
 
+        val currentPosition = Vec3d(worldState.worldSpawnPos.x, worldState.worldSpawnPos.y, worldState.worldSpawnPos.z)
+
+        val playerPosition = PlayerPosition(currentPosition, Vec3d.ZERO, worldState.worldSpawnAngle.x, worldState.worldSpawnAngle.y)
+        // id #1
         val playerPositionPacket = PlayerPositionLookS2CPacket(
-            worldState.worldSpawnPos.x, worldState.worldSpawnPos.y, worldState.worldSpawnPos.z,
-            worldState.worldSpawnAngle.x, worldState.worldSpawnAngle.y, PositionFlag.ROT, 0
-        )
+            0, playerPosition, PositionFlag.ROT)
 
         newPlayer.networkHandler.sendPacket(playerPositionPacket)
     }

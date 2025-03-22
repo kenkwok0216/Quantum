@@ -18,29 +18,37 @@ import net.minecraft.util.Identifier
 import net.minecraft.util.math.Vec3d
 import net.minecraft.world.TeleportTarget
 import xyz.nucleoid.fantasy.RuntimeWorldConfig
+import net.minecraft.network.packet.s2c.play.PositionFlag
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.world.GameMode
 
 object Extensions {
 
+    
     fun NbtCompound.getIdentifier(key: String): Identifier {
         return Identifier.of(this.getString(key))
     }
-
     fun PlayerEntity.teleportToWorld(targetWorld: ServerWorld) {
         val worldState = QuantumWorldStorage.getWorldState(targetWorld)
+        
         val teleportTarget = TeleportTarget(
             targetWorld, worldState.worldSpawnPos,
-            Vec3d.ZERO, worldState.worldSpawnAngle.x, worldState.worldSpawnAngle.y, false
-        ) {}
+            Vec3d.ZERO,worldState.worldSpawnAngle.x, 
+            worldState.worldSpawnAngle.y, TeleportTarget.NO_OP
+            )
+        
         this.teleportTo(teleportTarget)
+
+
     }
 
     fun PlayerEntity.teleportTo(targetWorld: ServerWorld, pos: Vec3d) {
-        val teleportTarget = TeleportTarget(targetWorld, pos, Vec3d.ZERO, 0f, 0f, false) {}
+        val teleportTarget = TeleportTarget(targetWorld, pos, Vec3d.ZERO, 0f, 0f, TeleportTarget.NO_OP)
         this.teleportTo(teleportTarget)
     }
 
     fun PlayerEntity.teleportTo(targetWorld: ServerWorld, pos: Vec3d, yaw: Float, pitch: Float) {
-        val teleportTarget = TeleportTarget(targetWorld, pos, Vec3d.ZERO, yaw, pitch, false) {}
+        val teleportTarget = TeleportTarget(targetWorld, pos, Vec3d.ZERO, yaw, pitch, TeleportTarget.NO_OP)
         this.teleportTo(teleportTarget)
     }
 

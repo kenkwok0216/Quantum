@@ -35,14 +35,14 @@ class QuantumWorldStorage : PersistentState() {
 
     companion object {
 
-        private const val STORAGE_ID = "${Quantum.MOD_ID}_world"
+        public const val STORAGE_ID = "${Quantum.MOD_ID}_world"
         private const val SPAWN_POS_X_KEY = "spawnposx"
         private const val SPAWN_POS_Y_KEY = "spawnposy"
         private const val SPAWN_POS_Z_KEY = "spawnposz"
         private const val SPAWN_POS_YAW_KEY = "spawnposyaw"
         private const val SPAWN_POS_PITCH_KEY = "spawnpospitch"
 
-        private val PersistentStateTypeLoader = Type(
+        public val PersistentStateTypeLoader = Type(
             { QuantumWorldStorage() },
             { nbt: NbtCompound, registryLookup: WrapperLookup -> fromNbt(nbt, registryLookup) },
             null
@@ -53,6 +53,7 @@ class QuantumWorldStorage : PersistentState() {
             if (!worldState::worldSpawnPos.isInitialized)
                 worldState.worldSpawnPos = world.spawnPos.toBottomCenterPos()
             worldState.markDirty()
+
             return worldState
         }
 
@@ -68,6 +69,7 @@ class QuantumWorldStorage : PersistentState() {
             // get spawn angle
             val spawnPosYaw = nbt.getFloat(SPAWN_POS_YAW_KEY)
             val spawnPosPitch = nbt.getFloat(SPAWN_POS_PITCH_KEY)
+
 
             worldState.worldSpawnPos = Vec3d(spawnPosX, spawnPosY, spawnPosZ)
             worldState.worldSpawnAngle = Vec2f(spawnPosYaw, spawnPosPitch)

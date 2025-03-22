@@ -4,6 +4,9 @@ import com.mojang.brigadier.Command
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
 import fr.unreal852.quantum.Quantum
+import fr.unreal852.quantum.world.QuantumWorldData
+import fr.unreal852.quantum.state.QuantumStorage
+import fr.unreal852.quantum.state.QuantumWorldStorage
 import fr.unreal852.quantum.command.suggestion.WorldsDimensionSuggestionProvider
 import fr.unreal852.quantum.utils.Extensions.teleportToWorld
 import net.minecraft.command.argument.DimensionArgumentType
@@ -13,6 +16,8 @@ import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
+import net.minecraft.world.GameMode
+import net.minecraft.nbt.NbtCompound
 
 class TeleportToWorldCommand : Command<ServerCommandSource> {
 
@@ -32,7 +37,19 @@ class TeleportToWorldCommand : Command<ServerCommandSource> {
                 return 0
             }
 
-            player.teleportToWorld(world)
+            player.teleportToWorld(world) 
+
+
+            //This can be remove and here for own use only
+            // Determine the game mode based on the world name prefix
+            val targetGameMode = if (worldName.toString().startsWith("minecraft:")) {
+                GameMode.SURVIVAL // Default to Survival mode for Minecraft worlds
+            } else {
+                GameMode.ADVENTURE // Default to Adventure mode for non-Minecraft worlds
+            } 
+
+            player.changeGameMode(targetGameMode)
+
         } catch (e: Exception) {
             Quantum.LOGGER.error("An error occurred while teleporting the player.", e)
         }

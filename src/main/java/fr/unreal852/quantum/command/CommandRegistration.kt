@@ -18,8 +18,8 @@ object CommandRegistration {
             TeleportToWorldCommand.register(dispatcher)
             SetWorldSpawnCommand.register(dispatcher)
             SetTeleportSignCommand.register(dispatcher)
-            CreatePortalCommand.register(dispatcher)
-            DeletePortalCommand.register(dispatcher)
+            //CreatePortalCommand.register(dispatcher)
+            //DeletePortalCommand.register(dispatcher)
         })
     }
 }
