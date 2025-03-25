@@ -24,6 +24,7 @@ import net.minecraft.world.dimension.DimensionTypes
 import xyz.nucleoid.fantasy.RuntimeWorldConfig
 import kotlin.random.Random
 import net.minecraft.world.GameMode
+import net.minecraft.world.GameRules
 
 class CreateWorldCommand : Command<ServerCommandSource> {
     override fun run(context: CommandContext<ServerCommandSource>): Int {
@@ -54,6 +55,9 @@ class CreateWorldCommand : Command<ServerCommandSource> {
                 .setGenerator(serverWorld.chunkManager.chunkGenerator)
                 .setSeed(worldSeed)
                 .setShouldTickTime(true)
+                .setGameRule(GameRules.DO_FIRE_TICK, false)
+                .setGameRule(GameRules.DO_WEATHER_CYCLE, false)
+                .setGameRule(GameRules.DO_MOB_GRIEFING, false)
 
             val quantumWorldData = QuantumWorldData(worldIdentifier, dimensionIdentifier, worldConfig)
 

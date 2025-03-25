@@ -47,11 +47,8 @@ dependencies {
 	// Kotlin
 	modImplementation("net.fabricmc:fabric-language-kotlin:1.11.0+kotlin.2.0.0")
 
-	modImplementation 'xyz.nucleoid:fantasy:0.6.4+1.21'
-	include 'xyz.nucleoid:fantasy:0.6.4+1.21'
-
-	modImplementation 'net.kyrptonaught:customportalapi:0.0.1-beta66-1.21'
-	include 'net.kyrptonaught:customportalapi:0.0.1-beta66-1.21'
+	modImplementation 'xyz.nucleoid:fantasy:0.6.6+1.21.4'
+	include 'xyz.nucleoid:fantasy:0.6.6+1.21.4'
 
 	implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }

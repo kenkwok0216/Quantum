@@ -5,7 +5,9 @@ import net.minecraft.nbt.NbtCompound
 import net.minecraft.util.Identifier
 import net.minecraft.world.Difficulty
 import net.minecraft.world.GameMode
+import net.minecraft.world.GameRules
 import xyz.nucleoid.fantasy.RuntimeWorldConfig
+import com.mojang.brigadier.context.CommandContext
 
 class QuantumWorldData(worldId: Identifier, dimensionId: Identifier, runtimeWorldConfig: RuntimeWorldConfig) {
 
@@ -40,14 +42,32 @@ class QuantumWorldData(worldId: Identifier, dimensionId: Identifier, runtimeWorl
             val difficulty = Difficulty.byId(nbt.getInt(DIFFICULTY_KEY))
             val shouldTick = nbt.getBoolean(SHOULD_TICK_KEY)
 
-            return QuantumWorldData(
-                worldId,
-                dimensionId,
-                RuntimeWorldConfig()
-                    .setSeed(seed)
-                    .setDifficulty(difficulty)
-                    .setShouldTickTime(shouldTick)
-            )
+
+            if(worldId.toString().startsWith("minecraft:")){
+                return QuantumWorldData(
+                    worldId,
+                    dimensionId,
+                    RuntimeWorldConfig()
+                        .setSeed(seed)
+                        .setDifficulty(difficulty)
+                        .setShouldTickTime(shouldTick)
+                )
+            } else {
+                return QuantumWorldData(
+                    worldId,
+                    dimensionId,
+                    RuntimeWorldConfig()
+                        .setSeed(seed)
+                        .setDifficulty(difficulty)
+                        .setShouldTickTime(shouldTick)
+                        .setGameRule(GameRules.DO_FIRE_TICK, false)
+                        .setGameRule(GameRules.DO_WEATHER_CYCLE, false)
+                        .setGameRule(GameRules.KEEP_INVENTORY, true)
+                        .setGameRule(GameRules.DO_MOB_GRIEFING, false)
+                )
+            }
+
+
         }
     }
 }
