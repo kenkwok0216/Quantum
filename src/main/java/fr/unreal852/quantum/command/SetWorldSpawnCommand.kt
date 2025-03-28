@@ -52,16 +52,17 @@ class SetWorldSpawnCommand : Command<ServerCommandSource> {
         private const val SPAWN_RADIUS_ARG = "spawnRadius"
 
         fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
-            dispatcher.register(
-                CommandManager.literal("qt")
+            dispatcher.register(CommandManager.literal("qt")
+                .then(CommandManager.literal("setSpawn")
                     .requires { commandSource: ServerCommandSource -> commandSource.hasPermissionLevel(4) }
                     .then(
-                        CommandManager.literal("setSpawn")
-                            .then(
-                                CommandManager.argument(SPAWN_RADIUS_ARG, IntegerArgumentType.integer(0)).executes(SetWorldSpawnCommand())
-                            )
-                            .executes(SetWorldSpawnCommand())
-                    ))
+                        CommandManager.argument(SPAWN_RADIUS_ARG, IntegerArgumentType.integer(0))
+                        .executes(SetWorldSpawnCommand())
+                    )
+
+                )
+                    
+            )
         }
     }
 }

@@ -87,19 +87,38 @@ class SetTeleportSignCommand : Command<ServerCommandSource> {
 
         private const val WORLD_IDENTIFIER_ARG = "worldIdentifier"
 
+        // This set of code have bugs: allow non-op players to use this command
+        // fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
+        //     dispatcher.register(
+        //         CommandManager.literal("qt")
+        //             .requires { commandSource: ServerCommandSource -> commandSource.hasPermissionLevel(4) }
+        //             .then(
+        //                 CommandManager.literal("setdestination")
+        //                     .then(
+        //                         CommandManager.argument(WORLD_IDENTIFIER_ARG, DimensionArgumentType.dimension())
+        //                             .suggests(WorldsDimensionSuggestionProvider())
+        //                             .executes(SetTeleportSignCommand())
+        //                     )
+        //                     .executes(SetTeleportSignCommand())
+        //             ))
+        // }        
+        
         fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
-            dispatcher.register(
-                CommandManager.literal("qt")
-                    .requires { commandSource: ServerCommandSource -> commandSource.hasPermissionLevel(4) }
-                    .then(
-                        CommandManager.literal("setdestination")
-                            .then(
-                                CommandManager.argument(WORLD_IDENTIFIER_ARG, DimensionArgumentType.dimension())
-                                    .suggests(WorldsDimensionSuggestionProvider())
-                                    .executes(SetTeleportSignCommand())
-                            )
+            dispatcher.register(CommandManager.literal("qt")
+                .then(
+                    CommandManager.literal("setdestination")
+                        .requires { commandSource: ServerCommandSource -> commandSource.hasPermissionLevel(4) }
+                        .then(
+                            CommandManager.argument(WORLD_IDENTIFIER_ARG, DimensionArgumentType.dimension())
+                            .suggests(WorldsDimensionSuggestionProvider())
                             .executes(SetTeleportSignCommand())
-                    ))
+                        )
+                )
+            )
+                    
         }
+
+
+
     }
 }
