@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.7-SNAPSHOT'
+	id 'fabric-loom' version '1.11-SNAPSHOT'
 	id 'maven-publish'
 	id 'org.jetbrains.kotlin.jvm'
 }
@@ -47,8 +47,8 @@ dependencies {
 	// Kotlin
 	modImplementation("net.fabricmc:fabric-language-kotlin:1.11.0+kotlin.2.0.0")
 
-	modImplementation 'xyz.nucleoid:fantasy:0.6.6+1.21.4'
-	include 'xyz.nucleoid:fantasy:0.6.6+1.21.4'
+	modImplementation 'xyz.nucleoid:fantasy:0.6.8+1.21.9'
+	include 'xyz.nucleoid:fantasy:0.6.8+1.21.9'
 
 	implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
