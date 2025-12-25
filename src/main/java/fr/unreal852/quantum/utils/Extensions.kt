@@ -26,8 +26,10 @@ object Extensions {
 
     
     fun NbtCompound.getIdentifier(key: String): Identifier {
-        return Identifier.of(this.getString(key))
+        val value = this.getString(key).orElse("minecraft:overworld") // fallback if missing
+        return Identifier.of(value)
     }
+
     fun PlayerEntity.teleportToWorld(targetWorld: ServerWorld) {
         val worldState = QuantumWorldStorage.getWorldState(targetWorld)
         

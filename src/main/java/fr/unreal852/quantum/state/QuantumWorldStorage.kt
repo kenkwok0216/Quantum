@@ -4,15 +4,19 @@ import fr.unreal852.quantum.Quantum
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.registry.RegistryWrapper.WrapperLookup
 import net.minecraft.server.world.ServerWorld
+import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Vec2f
 import net.minecraft.util.math.Vec3d
 import net.minecraft.world.PersistentState
+import net.minecraft.world.PersistentStateType
+import net.minecraft.datafixer.DataFixTypes
+import com.mojang.serialization.Codec
 
 class QuantumWorldStorage : PersistentState() {
 
     lateinit var worldSpawnPos: Vec3d
         private set
-    var worldSpawnAngle = Vec2f(0.0f, 0.0f) // X is yaw, Y is pitch
+    var worldSpawnAngle = Vec2f(0.0f, 0.0f) // X = yaw, Y = pitch
         private set
 
     fun setWorldSpawn(worldSpawn: Vec3d, worldSpawnYaw: Float, worldSpawnPitch: Float) {
@@ -21,7 +25,7 @@ class QuantumWorldStorage : PersistentState() {
         markDirty()
     }
 
-    override fun writeNbt(nbt: NbtCompound, registryLookup: WrapperLookup): NbtCompound {
+    fun writeNbt(nbt: NbtCompound, registryLookup: WrapperLookup): NbtCompound {
         // write spawn pos
         nbt.putDouble(SPAWN_POS_X_KEY, worldSpawnPos.x)
         nbt.putDouble(SPAWN_POS_Y_KEY, worldSpawnPos.y)
@@ -34,42 +38,48 @@ class QuantumWorldStorage : PersistentState() {
     }
 
     companion object {
-
-        public const val STORAGE_ID = "${Quantum.MOD_ID}_world"
+        const val STORAGE_ID = "${Quantum.MOD_ID}_world"
         private const val SPAWN_POS_X_KEY = "spawnposx"
         private const val SPAWN_POS_Y_KEY = "spawnposy"
         private const val SPAWN_POS_Z_KEY = "spawnposz"
         private const val SPAWN_POS_YAW_KEY = "spawnposyaw"
         private const val SPAWN_POS_PITCH_KEY = "spawnpospitch"
 
-        public val PersistentStateTypeLoader = Type(
-            { QuantumWorldStorage() },
-            { nbt: NbtCompound, registryLookup: WrapperLookup -> fromNbt(nbt, registryLookup) },
-            null
-        )
+        // Use PersistentStateType instead of Type
+        val TYPE: PersistentStateType<QuantumWorldStorage> =
+            PersistentStateType(
+                STORAGE_ID,
+                { QuantumWorldStorage() },
+                { Codec.unit(QuantumWorldStorage()) },
+                DataFixTypes.LEVEL
+            )
 
-        fun getWorldState(world: ServerWorld): QuantumWorldStorage {
-            val worldState = world.persistentStateManager.getOrCreate(PersistentStateTypeLoader, STORAGE_ID)
-            if (!worldState::worldSpawnPos.isInitialized)
-                worldState.worldSpawnPos = world.spawnPos.toBottomCenterPos()
-            worldState.markDirty()
-
-            return worldState
+    fun getWorldState(world: ServerWorld): QuantumWorldStorage {
+        val worldState = world.persistentStateManager.getOrCreate(TYPE)
+        if (!worldState::worldSpawnPos.isInitialized) {
+            // Use the static END_SPAWN_POS constant
+            val spawnBlockPos: BlockPos = ServerWorld.END_SPAWN_POS
+            worldState.worldSpawnPos = Vec3d(
+                spawnBlockPos.x.toDouble(),
+                spawnBlockPos.y.toDouble(),
+                spawnBlockPos.z.toDouble()
+            )
         }
+        worldState.markDirty()
+        return worldState
+    }
 
-        @Suppress("UNUSED_PARAMETER")
+
         fun fromNbt(nbt: NbtCompound, registryLookup: WrapperLookup): QuantumWorldStorage {
             val worldState = QuantumWorldStorage()
 
-            // get spawn pos
-            val spawnPosX = nbt.getDouble(SPAWN_POS_X_KEY)
-            val spawnPosY = nbt.getDouble(SPAWN_POS_Y_KEY)
-            val spawnPosZ = nbt.getDouble(SPAWN_POS_Z_KEY)
+            // unwrap Optionals
+            val spawnPosX = nbt.getDouble(SPAWN_POS_X_KEY).orElse(0.0)
+            val spawnPosY = nbt.getDouble(SPAWN_POS_Y_KEY).orElse(64.0)
+            val spawnPosZ = nbt.getDouble(SPAWN_POS_Z_KEY).orElse(0.0)
 
-            // get spawn angle
-            val spawnPosYaw = nbt.getFloat(SPAWN_POS_YAW_KEY)
-            val spawnPosPitch = nbt.getFloat(SPAWN_POS_PITCH_KEY)
-
+            val spawnPosYaw = nbt.getFloat(SPAWN_POS_YAW_KEY).orElse(0f)
+            val spawnPosPitch = nbt.getFloat(SPAWN_POS_PITCH_KEY).orElse(0f)
 
             worldState.worldSpawnPos = Vec3d(spawnPosX, spawnPosY, spawnPosZ)
             worldState.worldSpawnAngle = Vec2f(spawnPosYaw, spawnPosPitch)

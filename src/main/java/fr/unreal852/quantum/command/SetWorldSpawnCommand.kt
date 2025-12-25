@@ -12,33 +12,30 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.text.Text
 import net.minecraft.world.GameRules
+import net.minecraft.util.math.Vec3d
 
 class SetWorldSpawnCommand : Command<ServerCommandSource> {
     override fun run(context: CommandContext<ServerCommandSource>): Int {
-        if (context.source == null) {
-            return 0
-        }
+        val player = context.source.player ?: return 0  // Ensure the player is valid
+        val world = player.getEntityWorld() as? ServerWorld ?: return 0  // Ensure the world is ServerWorld
 
         try {
-            val world = context.source.world
-            val player = context.source.player
-
-            if (player == null || world !is ServerWorld) {
-                return 0
-            }
-
             val radius = CommandArgumentsUtils.getIntArgument(context, SPAWN_RADIUS_ARG, -1)
 
-            if (radius >= 0)
+            // Set spawn radius if it is valid
+            if (radius >= 0) {
                 world.gameRules.get(GameRules.SPAWN_RADIUS).set(radius, context.source.server)
+            }
 
-            world.setCustomSpawnPos(player.pos, player.yaw, player.pitch)
+            // Set the custom spawn position using player's position
+            val playerPosition: Vec3d = player.getSyncedPos()
+
+            world.setCustomSpawnPos(playerPosition, player.yaw, player.pitch)
 
             context.source.sendMessage(Text.translatable("quantum.text.cmd.world.spawnset", world.registryKey.value.toString()))
             context.source.sendMessage(Text.translatable("quantum.text.cmd.world.spawnset.position",
-                String.format("%.3f", player.x), String.format("%.3f", player.y), String.format("%.3f", player.z),
+                String.format("%.3f", playerPosition.x), String.format("%.3f", playerPosition.y), String.format("%.3f", playerPosition.z),
                 String.format("%.3f", player.yaw), String.format("%.3f", player.pitch)))
-
 
         } catch (e: Exception) {
             Quantum.LOGGER.error("An error occurred while setting the world spawn.", e)
@@ -48,7 +45,6 @@ class SetWorldSpawnCommand : Command<ServerCommandSource> {
     }
 
     companion object {
-
         private const val SPAWN_RADIUS_ARG = "spawnRadius"
 
         fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
@@ -57,11 +53,9 @@ class SetWorldSpawnCommand : Command<ServerCommandSource> {
                     .requires { commandSource: ServerCommandSource -> commandSource.hasPermissionLevel(4) }
                     .then(
                         CommandManager.argument(SPAWN_RADIUS_ARG, IntegerArgumentType.integer(0))
-                        .executes(SetWorldSpawnCommand())
+                            .executes(SetWorldSpawnCommand())
                     )
-
                 )
-                    
             )
         }
     }

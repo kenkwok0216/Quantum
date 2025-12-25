@@ -22,103 +22,64 @@ import net.minecraft.world.RaycastContext
 
 class SetTeleportSignCommand : Command<ServerCommandSource> {
     override fun run(context: CommandContext<ServerCommandSource>): Int {
+        val player = context.source.player ?: return 0
+        val world = player.getEntityWorld() as? ServerWorld ?: return 0 // Use getEntityWorld instead
 
-        if (context.source == null) {
+        val rayContext = RaycastContext(
+            player.eyePos,
+            player.eyePos.add(player.rotationVecClient.multiply(200.0)),
+            RaycastContext.ShapeType.OUTLINE,
+            RaycastContext.FluidHandling.NONE,
+            player
+        )
+
+        val hitResult = world.raycast(rayContext)
+        val blockState = world.getBlockState(hitResult.blockPos)
+
+        if (blockState.block !is SignBlock && blockState.block !is WallSignBlock && blockState.block !is HangingSignBlock) {
+            context.source.sendError(Text.translatable("quantum.text.cmd.sign.lookat"))
             return 0
         }
 
-        try {
-            val player = context.source.player
-            if (player == null || player.world == null) {
+        val worldIdentifier = IdentifierArgumentType.getIdentifier(context, WORLD_IDENTIFIER_ARG)
+        val serverWorld = context.source.server.getWorld(RegistryKey.of(RegistryKeys.WORLD, worldIdentifier))
+            ?: run {
+                context.source.sendError(Text.translatable("quantum.text.cmd.world.notexists", worldIdentifier.toString()))
                 return 0
             }
 
-            val world = player.world
+        val signEntity = world.getBlockEntity(hitResult.blockPos) as? SignBlockEntity ?: return 0
 
-            if (world is ServerWorld) {
-
-                val rayContext = RaycastContext(
-                    player.eyePos,
-                    player.eyePos.add(player.rotationVecClient.multiply(200.0)),
-                    RaycastContext.ShapeType.OUTLINE,
-                    RaycastContext.FluidHandling.NONE,
-                    player
-                )
-
-                val hitResult = world.raycast(rayContext)
-                val blockState = world.getBlockState(hitResult.blockPos)
-
-                if (blockState.block !is SignBlock && blockState.block !is WallSignBlock && blockState.block !is HangingSignBlock) {
-                    context.source.sendError(Text.translatable("quantum.text.cmd.sign.lookat"))
-                    return 0
-                }
-
-                val worldIdentifier = IdentifierArgumentType.getIdentifier(context, WORLD_IDENTIFIER_ARG)
-                val serverWorld = context.source.server.getWorld(RegistryKey.of(RegistryKeys.WORLD, worldIdentifier))
-
-                if (serverWorld == null) {
-                    context.source.sendError(Text.translatable("quantum.text.cmd.world.notexists", worldIdentifier.toString()))
-                    return 0
-                }
-
-                val signEntity = world.getBlockEntity(hitResult.blockPos) as SignBlockEntity? ?: return 0
-
-                if (!signEntity.changeText({
-                        SignText()
-                            .withMessage(0, Text.literal("teleport"))
-                            .withMessage(1, Text.literal(worldIdentifier.namespace))
-                            .withMessage(2, Text.literal(worldIdentifier.path))
-                    }, false)) {
-                    context.source.sendError(Text.translatable("quantum.text.cmd.sign.failed"))
-                    return 0
-                }
-
-                context.source.sendMessage(Text.translatable("quantum.text.cmd.sign.success", worldIdentifier.toString()))
-            }
-
-        } catch (e: Exception) {
-            Quantum.LOGGER.error("An error occurred while teleporting the player.", e)
+        // Use a lambda for changeText
+        if (!signEntity.changeText({
+                SignText()
+                    .withMessage(0, Text.literal("Teleport"))
+                    .withMessage(1, Text.literal(worldIdentifier.namespace))
+                    .withMessage(2, Text.literal(worldIdentifier.path))
+            }, false)) {
+            context.source.sendError(Text.translatable("quantum.text.cmd.sign.failed"))
+            return 0
         }
 
+        context.source.sendMessage(Text.translatable("quantum.text.cmd.sign.success", worldIdentifier.toString()))
         return 1
     }
 
     companion object {
-
         private const val WORLD_IDENTIFIER_ARG = "worldIdentifier"
 
-        // This set of code have bugs: allow non-op players to use this command
-        // fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
-        //     dispatcher.register(
-        //         CommandManager.literal("qt")
-        //             .requires { commandSource: ServerCommandSource -> commandSource.hasPermissionLevel(4) }
-        //             .then(
-        //                 CommandManager.literal("setdestination")
-        //                     .then(
-        //                         CommandManager.argument(WORLD_IDENTIFIER_ARG, DimensionArgumentType.dimension())
-        //                             .suggests(WorldsDimensionSuggestionProvider())
-        //                             .executes(SetTeleportSignCommand())
-        //                     )
-        //                     .executes(SetTeleportSignCommand())
-        //             ))
-        // }        
-        
         fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             dispatcher.register(CommandManager.literal("qt")
                 .then(
                     CommandManager.literal("setdestination")
-                        .requires { commandSource: ServerCommandSource -> commandSource.hasPermissionLevel(4) }
+                        .requires { it.hasPermissionLevel(4) }  // Ensure only OP players can use this
                         .then(
                             CommandManager.argument(WORLD_IDENTIFIER_ARG, DimensionArgumentType.dimension())
-                            .suggests(WorldsDimensionSuggestionProvider())
-                            .executes(SetTeleportSignCommand())
+                                .suggests(WorldsDimensionSuggestionProvider())
+                                .executes { commandContext -> SetTeleportSignCommand().run(commandContext) }  // Use lambda
                         )
                 )
             )
-                    
         }
-
-
-
     }
 }

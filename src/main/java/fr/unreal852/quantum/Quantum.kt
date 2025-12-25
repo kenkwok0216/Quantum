@@ -12,7 +12,7 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.ServerStarted
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
-//import net.kyrptonaught.customportalapi.api.CustomPortalBuilder
+// import net.kyrptonaught.customportalapi.api.CustomPortalBuilder
 import net.minecraft.registry.Registries
 import net.minecraft.server.MinecraftServer
 import net.minecraft.util.Identifier
@@ -28,12 +28,11 @@ object Quantum : ModInitializer {
     private val WORLDS: MutableMap<Identifier, QuantumWorld> = ConcurrentHashMap()
 
     override fun onInitialize() {
-
         CommandRegistration.registerCommands()
 
         ServerLifecycleEvents.SERVER_STARTED.register(ServerStarted { server: MinecraftServer ->
             loadWorlds(server)
-            //loadPortals(server)
+            // loadPortals(server)
         })
 
         UseBlockCallback.EVENT.register(PlayerUseSignHandler())
@@ -44,13 +43,19 @@ object Quantum : ModInitializer {
         return WORLDS.containsKey(identifier)
     }
 
-    fun getOrCreateWorld(server: MinecraftServer, worldData: QuantumWorldData, saveToDisk: Boolean): QuantumWorld? {
+    fun getOrCreateWorld(
+        server: MinecraftServer,
+        worldData: QuantumWorldData,
+        saveToDisk: Boolean
+    ): QuantumWorld? {
         if (WORLDS.containsKey(worldData.worldId))
             return WORLDS[worldData.worldId]
 
         val fantasy = Fantasy.get(server)
-        val runtimeWorldConfig = worldData.runtimeWorldConfig.setDimensionAndGenerator(server, worldData) // Important, set dim and chunk generator
-        val runtimeWorldHandle = fantasy.getOrOpenPersistentWorld(worldData.worldId, runtimeWorldConfig)
+        val runtimeWorldConfig =
+            worldData.runtimeWorldConfig.setDimensionAndGenerator(server, worldData) // Important, set dim and chunk generator
+        val runtimeWorldHandle =
+            fantasy.getOrOpenPersistentWorld(worldData.worldId, runtimeWorldConfig)
 
         val world = QuantumWorld(runtimeWorldHandle, worldData)
         WORLDS[worldData.worldId] = world
@@ -64,21 +69,25 @@ object Quantum : ModInitializer {
     fun deleteWorld(identifier: Identifier): Boolean {
         val world = WORLDS.getOrDefault(identifier, null) ?: return false
         val server = world.serverWorld.server
-        val fantasy = Fantasy.get(world.serverWorld.server)
+        val fantasy = Fantasy.get(server)
 
         if (!fantasy.tickDeleteWorld(world.serverWorld))
             return false
 
         val state = QuantumStorage.getQuantumState(server)
-        state.removeWorld(world.worldData)
-        WORLDS.remove(identifier)
 
+        // Direct removeWorld overload (ensure QuantumStorage has this method)
+        state.removeWorld(world.worldData)
+
+        // Or fallback to predicate version:
+        // state.removeWorld { it.worldId == world.worldData.worldId }
+
+        WORLDS.remove(identifier)
         return true
     }
 
     private fun loadWorlds(server: MinecraftServer) {
-
-        WORLDS.clear() // This is important otherwise it can lead to a world not being loaded if the client close and reopen a world
+        WORLDS.clear() // Important: prevents stale worlds when reopening
 
         val state = QuantumStorage.getQuantumState(server)
 
@@ -90,7 +99,7 @@ object Quantum : ModInitializer {
 
     // private fun loadPortals(server: MinecraftServer) {
     //     val state = QuantumStorage.getQuantumState(server)
-
+    //
     //     for (portal in state.getPortals()) {
     //         val itemPortal = Registries.ITEM.get(portal.portalIgniteItemId)
     //         LOGGER.info("Found portal '{}', loading it.", portal.destinationId)

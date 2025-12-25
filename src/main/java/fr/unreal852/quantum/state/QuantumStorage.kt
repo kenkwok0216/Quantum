@@ -5,26 +5,19 @@ import fr.unreal852.quantum.portal.QuantumPortalData
 import fr.unreal852.quantum.world.QuantumWorldData
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtList
-import net.minecraft.registry.RegistryWrapper.WrapperLookup
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.PersistentState
+import net.minecraft.world.PersistentStateType
+import net.minecraft.datafixer.DataFixTypes
+import com.mojang.serialization.Codec
 
 class QuantumStorage : PersistentState() {
 
-    private val worlds: MutableList<QuantumWorldData> = ArrayList()
-    private val portals: MutableList<QuantumPortalData> = ArrayList()
+    private val worlds = mutableListOf<QuantumWorldData>()
+    private val portals = mutableListOf<QuantumPortalData>()
 
-    fun getWorlds(): List<QuantumWorldData> {
-        return worlds
-    }
-
-    fun getPortals(): List<QuantumPortalData> {
-        return portals
-    }
-
-    fun getPortal(predicate: (QuantumPortalData) -> Boolean): QuantumPortalData? {
-        return portals.find(predicate)
-    }
+    fun getWorlds(): List<QuantumWorldData> = worlds
+    fun getPortals(): List<QuantumPortalData> = portals
 
     fun addWorld(worldData: QuantumWorldData) {
         worlds.add(worldData)
@@ -36,11 +29,14 @@ class QuantumStorage : PersistentState() {
         markDirty()
     }
 
-    fun removeWorld(worldData: QuantumWorldData) {
-        worlds.remove(worldData)
-        markDirty()
+    // Direct removeWorld overload for Quantum.deleteWorld
+    fun removeWorld(worldData: QuantumWorldData): Boolean {
+        val removed = worlds.remove(worldData)
+        if (removed) markDirty()
+        return removed
     }
 
+    // Predicate-based removal
     fun removeWorld(predicate: (QuantumWorldData) -> Boolean): Boolean {
         val world = worlds.find(predicate) ?: return false
         worlds.remove(world)
@@ -49,7 +45,9 @@ class QuantumStorage : PersistentState() {
     }
 
     fun removePortal(portalData: QuantumPortalData): Boolean {
-        return portals.remove(portalData)
+        val removed = portals.remove(portalData)
+        if (removed) markDirty()
+        return removed
     }
 
     fun removePortal(predicate: (QuantumPortalData) -> Boolean): Boolean {
@@ -59,7 +57,7 @@ class QuantumStorage : PersistentState() {
         return true
     }
 
-    override fun writeNbt(nbt: NbtCompound, registryLookup: WrapperLookup): NbtCompound {
+    fun writeNbt(nbt: NbtCompound): NbtCompound {
         val worldsNbtList = NbtList()
         val portalsNbtList = NbtList()
 
@@ -74,41 +72,42 @@ class QuantumStorage : PersistentState() {
             entry.writeToNbt(entryNbt)
             portalsNbtList.add(entryNbt)
         }
+
         nbt.put(WORLDS_KEY, worldsNbtList)
         nbt.put(PORTALS_KEY, portalsNbtList)
         return nbt
     }
 
     companion object {
-
         private const val STORAGE_ID = Quantum.MOD_ID
         private const val WORLDS_KEY = "worlds"
         private const val PORTALS_KEY = "portals"
 
-        private val PersistentStateTypeLoader = Type(
-            { QuantumStorage() },
-            { nbt: NbtCompound, registryLookup: WrapperLookup -> fromNbt(nbt, registryLookup) },
-            null
-        )
+        private val TYPE: PersistentStateType<QuantumStorage> =
+            PersistentStateType(
+                STORAGE_ID,
+                { QuantumStorage() },
+                { Codec.unit(QuantumStorage()) },
+                DataFixTypes.LEVEL
+            )
 
         fun getQuantumState(server: MinecraftServer): QuantumStorage {
             val stateManager = server.overworld.persistentStateManager
-            val quantumState = stateManager.getOrCreate(PersistentStateTypeLoader, STORAGE_ID)
-            quantumState.markDirty()
-            return quantumState
+            return stateManager.getOrCreate(TYPE)
         }
 
-        @Suppress("UNUSED_PARAMETER")
-        private fun fromNbt(nbt: NbtCompound, registryLookup: WrapperLookup): QuantumStorage {
+        fun fromNbt(nbt: NbtCompound): QuantumStorage {
             val quantumStorage = QuantumStorage()
-            val worldsNbtList = nbt.getList(WORLDS_KEY, 10) // 10 is the NbtCompound type
-            val portalsNbt = nbt.getList(PORTALS_KEY, 10)
-            for (i in worldsNbtList.indices) {
-                val entryNbt = worldsNbtList.getCompound(i)
+
+            val worldsNbtList = nbt.getList(WORLDS_KEY).orElse(NbtList())
+            val portalsNbtList = nbt.getList(PORTALS_KEY).orElse(NbtList())
+
+            for (i in 0 until worldsNbtList.size) {
+                val entryNbt = worldsNbtList.getCompound(i).orElse(NbtCompound())
                 quantumStorage.worlds.add(QuantumWorldData.fromNbt(entryNbt))
             }
-            for (i in portalsNbt.indices) {
-                val entryNbt = portalsNbt.getCompound(i)
+            for (i in 0 until portalsNbtList.size) {
+                val entryNbt = portalsNbtList.getCompound(i).orElse(NbtCompound())
                 quantumStorage.portals.add(QuantumPortalData.fromNbt(entryNbt))
             }
             return quantumStorage

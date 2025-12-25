@@ -35,39 +35,32 @@ class QuantumWorldData(worldId: Identifier, dimensionId: Identifier, runtimeWorl
         private const val SHOULD_TICK_KEY = "tick"
 
         fun fromNbt(nbt: NbtCompound): QuantumWorldData {
-
             val worldId = nbt.getIdentifier(WORLD_KEY)
             val dimensionId = nbt.getIdentifier(DIM_KEY)
-            val seed = nbt.getLong(SEED_KEY)
-            val difficulty = Difficulty.byId(nbt.getInt(DIFFICULTY_KEY))
-            val shouldTick = nbt.getBoolean(SHOULD_TICK_KEY)
 
+            val seed = nbt.getLong(SEED_KEY).orElse(0L)
+            val difficultyId = nbt.getInt(DIFFICULTY_KEY).orElse(0)
+            val difficulty = Difficulty.byId(difficultyId)
+            val shouldTick = nbt.getBoolean(SHOULD_TICK_KEY).orElse(false)
 
-            if(worldId.toString().startsWith("minecraft:")){
-                return QuantumWorldData(
-                    worldId,
-                    dimensionId,
-                    RuntimeWorldConfig()
-                        .setSeed(seed)
-                        .setDifficulty(difficulty)
-                        .setShouldTickTime(shouldTick)
-                )
+            val config = RuntimeWorldConfig()
+                .setSeed(seed)
+                .setDifficulty(difficulty)
+                .setShouldTickTime(shouldTick)
+
+            return if (worldId.toString().startsWith("minecraft:")) {
+                QuantumWorldData(worldId, dimensionId, config)
             } else {
-                return QuantumWorldData(
+                QuantumWorldData(
                     worldId,
                     dimensionId,
-                    RuntimeWorldConfig()
-                        .setSeed(seed)
-                        .setDifficulty(difficulty)
-                        .setShouldTickTime(shouldTick)
+                    config
                         .setGameRule(GameRules.DO_FIRE_TICK, false)
                         .setGameRule(GameRules.DO_WEATHER_CYCLE, false)
                         .setGameRule(GameRules.KEEP_INVENTORY, true)
                         .setGameRule(GameRules.DO_MOB_GRIEFING, false)
                 )
             }
-
-
         }
     }
 }

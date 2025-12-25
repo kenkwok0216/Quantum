@@ -6,28 +6,37 @@ import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket
 import net.minecraft.network.packet.s2c.play.PositionFlag
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.Vec3d
-import net.minecraft.entity.player.PlayerPosition
+import net.minecraft.entity.EntityPosition
+import net.minecraft.server.world.ServerWorld
 
 class PlayerRespawnHandler : AfterRespawn {
 
-    // A Minecraft bug ignore the world spawn angle, this fix it for now
-    // https://bugs.mojang.com/browse/MC-200092
-
     override fun afterRespawn(oldPlayer: ServerPlayerEntity, newPlayer: ServerPlayerEntity, alive: Boolean) {
+        // Check if the old player's respawn data is null
+        if (oldPlayer.getRespawn() == null) {
+            // Use getEntityWorld() instead to access the world
+            val world = newPlayer.getEntityWorld() as? ServerWorld ?: return
+            
+            val worldState = QuantumWorldStorage.getWorldState(world)
 
-        if (oldPlayer.spawnPointPosition != null) { // Ignore respawn if the player has a bed
-            return
-        }        
+            // Create the EntityPosition using spawn data
+            val entityPos = EntityPosition(
+                Vec3d(worldState.worldSpawnPos.x.toDouble(),
+                      worldState.worldSpawnPos.y.toDouble(),
+                      worldState.worldSpawnPos.z.toDouble()),
+                Vec3d.ZERO,
+                worldState.worldSpawnAngle.x.toFloat(), // yaw
+                worldState.worldSpawnAngle.y.toFloat()  // pitch
+            )
 
-        val worldState = QuantumWorldStorage.getWorldState(newPlayer.serverWorld)
+            val packet = PlayerPositionLookS2CPacket(
+                newPlayer.id, // Using the new player ID
+                entityPos,
+                PositionFlag.ROT // Adjust based on necessary flags
+            )
 
-        val currentPosition = Vec3d(worldState.worldSpawnPos.x, worldState.worldSpawnPos.y, worldState.worldSpawnPos.z)
-
-        val playerPosition = PlayerPosition(currentPosition, Vec3d.ZERO, worldState.worldSpawnAngle.x, worldState.worldSpawnAngle.y)
-        // id #1
-        val playerPositionPacket = PlayerPositionLookS2CPacket(
-            0, playerPosition, PositionFlag.ROT)
-
-        newPlayer.networkHandler.sendPacket(playerPositionPacket)
+            // Send the packet to the new player
+            newPlayer.networkHandler.sendPacket(packet)
+        }
     }
 }
